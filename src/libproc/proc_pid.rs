@@ -1,6 +1,6 @@
 extern crate libc;
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 use std::mem;
 #[cfg(target_os = "linux")]
 use std::ffi::CString;
@@ -11,7 +11,7 @@ use std::fs::File;
 #[cfg(target_os = "linux")]
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 use std::ptr;
 use std::env;
 
@@ -27,7 +27,7 @@ use crate::libproc::work_queue_info::WorkQueueInfo;
 
 #[cfg(target_os = "linux")]
 use self::libc::{c_char, readlink};
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 use self::libc::{c_int, c_void, c_char};
 
 // Since we cannot access C macros for constants from Rust - I have had to redefine this, based on Apple's source code
@@ -42,9 +42,9 @@ use self::libc::{c_int, c_void, c_char};
 // #define	MAXPATHLEN	PATH_MAX
 // in https://opensource.apple.com/source/xnu/xnu-792.25.20/bsd/sys/syslimits.h
 // #define	PATH_MAX		 1024
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 const MAXPATHLEN: usize = 1024;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 const PROC_PIDPATHINFO_MAXSIZE: usize = 4 * MAXPATHLEN;
 
 // From http://opensource.apple.com//source/xnu/xnu-1456.1.26/bsd/sys/proc_info.h and
@@ -132,7 +132,7 @@ impl ListPIDInfo for ListThreads {
 
 // this extern block links to the libproc library
 // Original signatures of functions can be found at http://opensource.apple.com/source/Libc/Libc-594.9.4/darwin/libproc.c
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 #[link(name = "proc", kind = "dylib")]
 extern {
     // All these methods are supported in the minimum version of Mac OS X which is 10.5
@@ -159,7 +159,7 @@ extern {
 ///     println!("Found {} processes using listpids()", pids.len());
 /// }
 /// ```
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn listpids(proc_types: ProcType) -> Result<Vec<u32>, String> {
     let buffer_size = unsafe { proc_listpids(proc_types as u32, 0, ptr::null_mut(), 0) };
     if buffer_size <= 0 {
@@ -227,7 +227,7 @@ pub fn listpids(proc_types: ProcType) -> Result<Vec<u32>, String> {
 //       @param buffersize the size (in bytes) of the provided buffer.
 //       @result the number of bytes of data returned in the provided buffer;
 //               -1 if an error was encountered;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn listpidspath(proc_types: ProcType, path: &str) -> Result<Vec<u32>, String> {
     let buffer_size = unsafe {
         proc_listpidspath(proc_types as u32, 0, path.as_ptr() as * const c_char, 0, ptr::null_mut(), 0)
@@ -279,7 +279,7 @@ pub fn listpidspath(proc_types: ProcType, path: &str) -> Result<Vec<u32>, String
 ///     Err(err) => assert!(false, "Error retrieving process info: {}", err)
 /// };
 /// ```
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn pidinfo<T: PIDInfo>(pid: i32, arg: u64) -> Result<T, String> {
     let flavor = T::flavor() as i32;
     let buffer_size = mem::size_of::<T>() as i32;
@@ -298,7 +298,7 @@ pub fn pidinfo<T: PIDInfo>(pid: i32, arg: u64) -> Result<T, String> {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
 pub fn pidinfo<T: PIDInfo>(_pid: i32, _arg: u64) -> Result<T, String> {
     unimplemented!()
 }
@@ -320,7 +320,7 @@ pub fn pidinfo<T: PIDInfo>(_pid: i32, _arg: u64) -> Result<T, String> {
 ///     }
 /// }
 /// ```
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn regionfilename(pid: i32, address: u64) -> Result<String, String> {
     let mut buf: Vec<u8> = Vec::with_capacity(PROC_PIDPATHINFO_MAXSIZE - 1);
     let buffer_ptr = buf.as_mut_ptr() as *mut c_void;
@@ -334,7 +334,7 @@ pub fn regionfilename(pid: i32, address: u64) -> Result<String, String> {
     helpers::check_errno(ret, &mut buf)
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
 pub fn regionfilename(_pid: i32, _address: u64) -> Result<String, String> {
     Err("'regionfilename' not implemented on linux".to_owned())
 }
@@ -351,7 +351,7 @@ pub fn regionfilename(_pid: i32, _address: u64) -> Result<String, String> {
 ///     Err(message) => assert!(false, message)
 /// }
 /// ```
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn pidpath(pid: i32) -> Result<String, String> {
     let mut buf: Vec<u8> = Vec::with_capacity(PROC_PIDPATHINFO_MAXSIZE - 1);
     let buffer_ptr = buf.as_mut_ptr() as *mut c_void;
@@ -391,7 +391,7 @@ pub fn pidpath(pid: i32) -> Result<String, String> {
 ///     Err(err) => writeln!(&mut std::io::stderr(), "Error: {}", err).unwrap()
 /// }
 /// ```
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn libversion() -> Result<(i32, i32), String> {
     let mut major = 0;
     let mut minor = 0;
@@ -409,7 +409,7 @@ pub fn libversion() -> Result<(i32, i32), String> {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
 pub fn libversion() -> Result<(i32, i32), String> {
     Err("Linux does not use a library, so no library version number".to_owned())
 }
@@ -427,7 +427,7 @@ pub fn libversion() -> Result<(i32, i32), String> {
 ///     Err(err) => writeln!(&mut std::io::stderr(), "Error: {}", err).unwrap()
 /// }
 /// ```
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn name(pid: i32) -> Result<String, String> {
     let mut namebuf: Vec<u8> = Vec::with_capacity(PROC_PIDPATHINFO_MAXSIZE - 1);
     let buffer_ptr = namebuf.as_ptr() as *mut c_void;
@@ -507,7 +507,7 @@ pub fn name(pid: i32) -> Result<String, String> {
 ///     }
 /// }
 /// ```
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn listpidinfo<T: ListPIDInfo>(pid: i32, max_len: usize) -> Result<Vec<T::Item>, String> {
     let flavor = T::flavor() as i32;
     let buffer_size = mem::size_of::<T::Item>() as i32 * max_len as i32;
@@ -532,7 +532,7 @@ pub fn listpidinfo<T: ListPIDInfo>(pid: i32, max_len: usize) -> Result<Vec<T::It
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
 pub fn listpidinfo<T: ListPIDInfo>(_pid: i32, _max_len: usize) -> Result<Vec<T::Item>, String> {
     unimplemented!()
 }
@@ -550,7 +550,7 @@ pub fn listpidinfo<T: ListPIDInfo>(_pid: i32, _max_len: usize) -> Result<Vec<T::
 ///     Err(err) => writeln!(&mut std::io::stderr(), "Error: {}", err).unwrap()
 /// }
 /// ```
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn pidcwd(_pid: pid_t) -> Result<PathBuf, String> {
     Err("pidcwd is not implemented for macos".into())
 }
@@ -592,7 +592,7 @@ pub fn cwdself() -> Result<PathBuf, String> {
 ///     println!("With great power comes great responsibility");
 /// }
 /// ```
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn am_root() -> bool {
     // geteuid() is unstable still - wait for it or wrap this:
     // https://stackoverflow.com/questions/3214297/how-can-my-c-c-application-determine-if-the-root-user-is-executing-the-command
@@ -612,14 +612,14 @@ mod test {
     use std::process;
     use std::env;
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     use crate::libproc::bsd_info::BSDInfo;
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     use crate::libproc::file_info::ListFDs;
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     use crate::libproc::task_info::TaskAllInfo;
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     use super::{libversion, listpidinfo, ListThreads, pidinfo};
     use super::{name, cwdself, listpids, pidpath};
     #[cfg(target_os = "linux")]
@@ -627,7 +627,7 @@ mod test {
     use crate::libproc::proc_pid::ProcType;
     use super::am_root;
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     #[test]
     fn pidinfo_test() {
         use std::process;
@@ -639,7 +639,7 @@ mod test {
         };
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     #[test]
     fn listpidinfo_test() {
         use std::process;
@@ -656,7 +656,7 @@ mod test {
     }
 
     #[test]
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     fn libversion_test() {
         libversion().unwrap();
     }
@@ -677,7 +677,7 @@ mod test {
     fn name_test() {
         #[cfg(target_os = "linux")]
             let expected_name = "systemd";
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
             let expected_name = "launchd";
 
         if am_root() || cfg!(target_os = "linux") {
@@ -693,7 +693,7 @@ mod test {
     #[test]
     // This checks that it cannot find the path of the process with pid -1 and returns correct error messaage
     fn pidpath_test_unknown_pid_test() {
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
             let error_message = "No such process";
         #[cfg(target_os = "linux")]
             let error_message = "No such file or directory";
@@ -705,7 +705,7 @@ mod test {
     }
 
     #[test]
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     // This checks that it cannot find the path of the process with pid 1
     fn pidpath_test() {
         assert_eq!("/sbin/launchd", pidpath(1).unwrap());
@@ -742,7 +742,7 @@ mod test {
     }
 
     #[test]
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     fn listpidspath_test() {
         let pids = super::listpidspath(ProcType::ProcAllPIDS, "/").unwrap();
         assert!(pids.len() > 1);

@@ -1,6 +1,6 @@
 extern crate libc;
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 use crate::libproc::helpers;
 
 use self::libc::{c_void, c_int};
@@ -22,7 +22,7 @@ pub enum PidRUsageFlavor {
 
 // this extern block links to the libproc library
 // Original signatures of functions can be found at http://opensource.apple.com/source/Libc/Libc-594.9.4/darwin/libproc.c
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 #[link(name = "proc", kind = "dylib")]
 extern {
     fn proc_pid_rusage(pid: c_int, flavor: c_int, buffer: *mut c_void) -> c_int;
@@ -45,7 +45,7 @@ extern {
 ///     }
 /// }
 /// ```
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 #[cfg(feature = "macosx_10_9")]
 pub fn pidrusage<T: PIDRUsage>(pid : i32) -> Result<T, String> {
     let flavor = T::flavor() as i32;
@@ -64,7 +64,7 @@ pub fn pidrusage<T: PIDRUsage>(pid : i32) -> Result<T, String> {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
 pub fn pidrusage<T: PIDRUsage>(pid : i32) -> Result<T, String> {
     unimplemented!()
 }
@@ -230,7 +230,7 @@ mod test {
     use super::pidrusage;
     use super::RUsageInfoV2;
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     #[test]
     fn pidrusage_test() {
         use std::process;

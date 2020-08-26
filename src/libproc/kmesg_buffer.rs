@@ -1,10 +1,10 @@
 extern crate errno;
 extern crate libc;
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 use std::str;
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 use self::libc::{c_int, c_void};
 
 #[cfg(target_os = "linux")]
@@ -19,12 +19,12 @@ use std::sync::mpsc::Receiver;
 use std::{thread, time};
 
 // See https://opensource.apple.com/source/xnu/xnu-1456.1.26/bsd/sys/msgbuf.h
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 const MAX_MSG_BSIZE: usize = 1024 * 1024;
 
 // this extern block links to the libproc library
 // Original signatures of functions can be found at http://opensource.apple.com/source/Libc/Libc-594.9.4/darwin/libproc.c
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 #[link(name = "proc", kind = "dylib")]
 extern {
     // This method is supported in the minimum version of Mac OS X which is 10.5
@@ -37,7 +37,7 @@ extern {
 /// faclev,seqnum,timestamp[optional, ...];message\n
 ///  TAGNAME=value (0 or more Tags)
 // See http://opensource.apple.com//source/system_cmds/system_cmds-336.6/dmesg.tproj/dmesg.c// See http://opensource.apple.com//source/system_cmds/system_cmds-336.6/dmesg.tproj/dmesg.c
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub fn kmsgbuf() -> Result<String, String> {
     let mut message_buffer: Vec<u8> = Vec::with_capacity(MAX_MSG_BSIZE);
     let buffer_ptr = message_buffer.as_mut_ptr() as *mut c_void;
