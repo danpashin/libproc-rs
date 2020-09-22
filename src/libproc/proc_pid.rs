@@ -30,7 +30,7 @@ use self::libc::{c_char, readlink};
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 use self::libc::{c_int, c_void, c_char};
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 use std::ffi::CString;
 
 // Since we cannot access C macros for constants from Rust - I have had to redefine this, based on Apple's source code
